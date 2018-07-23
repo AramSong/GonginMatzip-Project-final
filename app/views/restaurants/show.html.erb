@@ -1,0 +1,206 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+
+.liked{
+   color: #F1599E;
+}
+
+.like{
+    font-family: 'Yeon Sung', cursive;	
+    -webkit-appearance: media-overlay-play-button !important;
+    cursor: pointer !important;
+    background-color:  #ffff !important;
+}
+
+.btn{
+    float: right !important;
+}
+
+</style>
+<h1 id="title"><%= @restaurant.res_name%>을(를) <%= @restaurant.scrabs.size %> 명이 좋아합니다. 
+  <!--스크랩-->
+    <% if user_signed_in? %>
+     
+      <% if current_user.is_scrab? (@restaurant) %>
+           <%= link_to "스크랩 취소", new_scrab_path(restaurant_id: @restaurant.id),class: "btn",method: "POST"%>
+      <% else %>
+          <%= link_to "스크랩", new_scrab_path(restaurant_id: @restaurant.id),class: "btn",method: "POST"%>
+      <% end %>
+      <!--리뷰작성-->
+      <%= link_to "리뷰작성", new_review_path(restaurant_id: @restaurant.id),class: "btn"%>
+   
+    <%end%>
+</h1>
+ 
+<hr>
+<p style="margin-top:-12px">
+    <em class="link">
+        <br>
+        <a href="javascript:void(0);" onclick="window.open('http://fiy.daum.net/fiy/map/CsGeneral.daum', '_blank', 'width=981, height=650')">
+            혹시 주소 결과가 잘못 나오는 경우에는 여기에 제보해주세요.
+        </a>
+    </em>
+</p>
+<div id="map" style="width:100%;height:350px;"></div>
+<br><br>
+
+<p>식당 정보
+         <% @restaurant.tags.each do |tag| %>
+                 <%= link_to "##{tag.name}", "/restaurants/hashtags/#{tag.name}" , class: "btn btn-light" %>
+         <% end %>
+    </p>
+
+<hr>
+
+ 
+
+<h3>리뷰  목록</h3>
+<ul class="list-group">
+  <% @restaurant.reviews.each do |review| %>
+      <li class="list-group-item ">
+          <strong><%= review.user.has_nickname(review.user) %></strong> <br><br>
+         맛평가 : 
+          <% (1..review.taste_eval).each do%>
+              <span class="fa fa-star checked" style="width:11px; margin-top:-5px; font-size:9px; color:#FFD700;"></span>
+          <%end%>
+          <% tmp = 5- review.taste_eval%>
+          <% (1..tmp).each do %>
+            <span class="fa fa-star" style="width:11px; margin-top:-5px; font-size:9px; color:#808080;"></span>
+          <% end %>
+          &nbsp;&nbsp;
+          서비스평가 :
+          <% (1..review.service_eval).each do%>
+              <span  class="fa fa-star checked" style="width:11px; margin-top:-5px; font-size:9px; color:#FFD700;"></span>
+          <%end%>
+          <% tmp = 5- review.service_eval%>
+          <% (1..tmp).each do %>
+            <span class="fa fa-star" style="width:11px; margin-top:-5px; font-size:9px; color:#808080;"></span>
+          <% end %>
+          &nbsp;&nbsp;
+          가격평가 : 
+           <% (1..review.price_eval).each do%>
+              <span  class="fa fa-star checked" style=" width:11px; margin-top:-5px; font-size:9px; color:#FFD700;"></span>
+          <%end%>
+          <% tmp = 5- review.price_eval%>
+          <% (1..tmp).each do %>
+            <span class="fa fa-star" style="width:11px; margin-top:-5px; font-size:9px; color:#808080;"></span>
+          <% end %>
+          
+  
+         <br><p><%= simple_format(review.contents) %></p>
+      
+              
+        
+          <p align ="right">
+           <% if user_signed_in? %>      
+                <% if current_user.is_like?(review) %>
+                      <button data-id="<%=review.id%>" class="like"><input type="hidden" id="flag-<%=review.id%>" value="false"><i class="fa fa-thumbs-o-up"> </i>좋아요 취소(<span class= "count-<%=review.id%>"><%= review.likes.count %></span>) </button> 
+                <% else %>
+                      <button data-id="<%=review.id%>" class="like"><input type="hidden" id="flag-<%=review.id%>" value="true"><i class="fa fa-thumbs-o-up"> </i>   좋아요(<span class="count-<%=review.id%>"><%= review.likes.count %></span>)</button>  
+                      
+                <% end %>
+           <% else %>
+                <button class="like" ><i class="fa fa-thumbs-o-up"> </i>좋아요(<span  class= "count-<%=review.id%>"><%= review.likes.count %></span>)</button>  
+           <% end %>
+          </p>
+      
+      
+      </li>
+  <% end %>
+</ul>
+
+
+<hr>
+
+<script>
+    $('.like').on('click',function(){
+      console.log("으어어어");
+      var review_id =  $(this).attr('data-id');
+      var flag = $(`#flag-${review_id}`).val();
+      console.log(flag + "1");
+      if(flag == "false"){
+      	var like_count = parseInt($(`.count-${review_id}`).text());
+      	like_count = like_count - 1;
+      	
+      	
+      	console.log(flag + "2");
+      	flag = "true";
+      	$(this).html(`<input type="hidden" id="flag-${review_id}" value="true"> <i class="fa fa-thumbs-o-up"></i>좋아요(<span class= "count-${review_id}">${like_count}</span>)`)
+      
+      	$.ajax({
+      		url: "/likes/" + review_id
+      	})
+      
+      }
+      
+      else{
+      	var like_count = parseInt($(`.count-${review_id}`).text());
+      	like_count = like_count + 1;
+      	
+      	console.log(flag + "3");
+      	flag = "false";
+        $(this).html(`<input type="hidden" id="flag-${review_id}" value="false"> <i class="fa fa-thumbs-o-up"></i>좋아요 취소(<span class= "count-${review_id}">${like_count}</span>)`)
+      
+      	$.ajax({
+      		url: "/likes/" + review_id
+      	})
+      }  
+   });  
+</script>
+<% content_for 'javascript_contents' do %>
+<%= javascript_include_tag params[:controller] %>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c54932c4439cf12df10a1ccd41bbe691&libraries=services"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c54932c4439cf12df10a1ccd41bbe691"></script>
+<script>
+$(document).ready(function () {
+    var mapContainer = document.getElementById('map'), // 지도를 표시할 div 
+        mapOption = {
+            center: new daum.maps.LatLng(33.450701, 126.570667), // 지도의 중심좌표
+            level: 3// 지도의 확대 레벨
+        };  
+    
+    // 지도를 생성합니다    
+    var map = new daum.maps.Map(mapContainer, mapOption); 
+    
+    // 주소-좌표 변환 객체를 생성합니다
+    var geocoder = new daum.maps.services.Geocoder();
+    
+    // 주소로 좌표를 검색합니다
+    geocoder.addressSearch("<%=@restaurant.detail_addr%>", function(result, status) {
+    
+        // 정상적으로 검색이 완료됐으면 
+         if (status === daum.maps.services.Status.OK) {
+    
+            var coords = new daum.maps.LatLng(result[0].y, result[0].x);
+    
+            // 결과값으로 받은 위치를 마커로 표시합니다
+            var marker = new daum.maps.Marker({
+                map: map,
+                position: coords
+            });
+    
+            // 인포윈도우로 장소에 대한 설명을 표시합니다
+            var infowindow = new daum.maps.InfoWindow({
+                content: `<div style='width:150px;text-align:center;padding:6px 0;'><%= @restaurant.res_name%><br><a href="http://map.daum.net/link/to/<%= @restaurant.res_name%>,<%= @restaurant.latitude%>,<%= @restaurant.longitude%>" style="color:blue" target="_blank">길찾기</a></div>`
+            });
+            infowindow.open(map, marker);
+    
+            // 지도의 중심을 결과값으로 받은 위치로 이동시킵니다
+            map.setCenter(coords);
+            
+        }
+        marker.setMap(map);
+    });       
+   	
+})
+</script>
+<% end %>
+
+
